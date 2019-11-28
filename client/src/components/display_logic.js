@@ -2,11 +2,9 @@
 // eslint-disable-next-line
 import jQuery from 'jquery';
 
-
 jQuery.noConflict();
 
 window.ss = window.ss || {};
-
 
 jQuery.entwine('ss', ($) => {
   const animation = {
@@ -47,7 +45,6 @@ jQuery.entwine('ss', ($) => {
     }
   };
 
-
   $('div.display-logic, div.display-logic-master').entwine({
 
     escapeSelector(selector) {
@@ -80,7 +77,24 @@ jQuery.entwine('ss', ($) => {
 
     getFieldName() {
       const field = this.getFormField();
-      return field ? field.prop('name') : null;
+
+      // Get field name property
+      if (field) {
+        const name = field.prop('name');
+        if (name) {
+          return name;
+        }
+      }
+
+      // Fallback to parsing ID property, remove _Holder
+      const fieldID = this.attr('id');
+      if (fieldID) {
+        return this.attr('id')
+          .replace(new RegExp(`^${this.getFormID()}_`), '')
+          .replace(/_Holder$/, '');
+      }
+
+      return null;
     },
 
     nameToHolder(name) {
