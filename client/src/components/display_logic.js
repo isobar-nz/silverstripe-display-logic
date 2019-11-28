@@ -1,4 +1,5 @@
 /* global window */
+// eslint-disable-next-line
 import jQuery from 'jquery';
 
 
@@ -50,56 +51,45 @@ jQuery.entwine('ss', ($) => {
   $('div.display-logic, div.display-logic-master').entwine({
 
     escapeSelector(selector) {
-      return selector.replace(/(\[)/g, '_').replace(/(\])/g, '');
+      return selector
+        .replace(/[^a-zA-Z0-9\-_:.]+/g, '_') // No special characters
+        .replace(/_+/g, '_') // Merge duplicate underscores
+        .replace(/_*$/, ''); // no trailing underscore
+    },
+
+    getForm() {
+      return this.closest('form');
+    },
+
+    getLogicHolder() {
+      return this.closest('.displaylogic-holder, form');
     },
 
     findHolder(name) {
-      return this.closest('form').find(
-        this.escapeSelector(`#${this.nameToHolder(name)}`)
-      );
+      const holderName = this.nameToHolder(name);
+      return this.getLogicHolder().find(`#${holderName}`);
     },
 
     getFormField() {
-      let name = this.getFieldName();
-      if (name) {
-        name = this.escapeSelector(name);
-      }
-
-      if (this.find(`[name=${name}]`).length) {
-        return this.find(`[name=${name}]`);
-      }
-
-      return this.find(`#${this.getFormID()}_${name}`);
-    },
-
-    getFieldName() {
-      const fieldID = this.attr('id');
-
-      if (fieldID) {
-        return this.attr('id')
-          .replace(new RegExp(`^${this.getFormID()}_`), '')
-          .replace(/_Holder$/, '');
+      const results = this.find('input, select, textarea');
+      if (results.length) {
+        return $(results[0]);
       }
       return null;
     },
 
+    getFieldName() {
+      const field = this.getFormField();
+      return field ? field.prop('name') : null;
+    },
+
     nameToHolder(name) {
-      let holderName = this.escapeSelector(name);
-
-      // SS 3.2+, Convert::raw2htmlid() logic
-      holderName = holderName.replace(/[^a-zA-Z0-9\-_:.]+/g, '_').replace(/_+/g, '_');
-
-      // Hack!
-      // Remove this when OptionsetField_holder.ss uses $HolderID
-      // as its div ID instead of $ID
-      // if (this.closest('form').find(`ul.optionset li input[name=${holderName}]:first`).length) {
-      //   return holderName;
-      // }
+      const holderName = this.escapeSelector(name);
       return `${this.getFormID()}_${holderName}_Holder`;
     },
 
     getFormID() {
-      return this.closest('form').attr('id');
+      return this.getForm().attr('id');
     },
 
     getFieldValue() {
@@ -164,21 +154,17 @@ jQuery.entwine('ss', ($) => {
     onmatch() {
       let allReadonly = true;
       let masters = [];
-      const field = this.getFormField();
-
-      if (field.data('display-logic-eval') && field.data('display-logic-masters')) {
-        this.data('display-logic-eval', field.data('display-logic-eval'))
-          .data('display-logic-masters', field.data('display-logic-masters'))
-          .data('display-logic-animation', field.data('display-logic-animation'));
-      }
 
       masters = this.getMasters();
       if (masters && masters.length) {
         Object.entries(masters).forEach(entry => {
           const [, selector] = entry;
-          const holderName = this.nameToHolder(this.escapeSelector(selector));
-          const master = this.closest('form').find(this.escapeSelector(`#${holderName}`));
-          if (!master.is('.readonly')) allReadonly = false;
+          const holderName = this.nameToHolder(selector);
+          const master = this.getLogicHolder().find(`#${holderName}`);
+
+          if (!master.is('.readonly')) {
+            allReadonly = false;
+          }
 
           master.addClass('display-logic-master');
           if (master.find('input[type=radio]').length) {
@@ -197,7 +183,7 @@ jQuery.entwine('ss', ($) => {
     },
 
     getLogic() {
-      return $.trim(this.data('display-logic-eval'));
+      return $.trim(this.getFormField().data('display-logic-eval'));
     },
 
     parseLogic() {
@@ -248,7 +234,7 @@ jQuery.entwine('ss', ($) => {
   $('div.display-logic.display-logic-display').entwine({
     testLogic() {
       this.getAnimationTargets().forEach(t => {
-        animation.perform(t, this.parseLogic(), this.data('display-logic-animation'));
+        animation.perform(t, this.parseLogic(), this.getFormField().data('display-logic-animation'));
       });
     }
   });
@@ -257,7 +243,7 @@ jQuery.entwine('ss', ($) => {
   $('div.display-logic.display-logic-hide').entwine({
     testLogic() {
       this.getAnimationTargets().forEach(t => {
-        animation.perform(t, !this.parseLogic(), this.data('display-logic-animation'));
+        animation.perform(t, !this.parseLogic(), this.getFormField().data('display-logic-animation'));
       });
     }
   });
@@ -326,7 +312,7 @@ jQuery.entwine('ss', ($) => {
       }
       const self = this;
       const listeners = [];
-      this.closest('form').find('.display-logic').each(function () {
+      this.getLogicHolder().find('.display-logic').each(function () {
         const masters = $(this).getMasters();
         if (masters && masters.length) {
           Object.entries(masters).forEach(entry => {
