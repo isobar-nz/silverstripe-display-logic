@@ -170,9 +170,10 @@ jQuery.entwine('ss', ($) => {
       let masters = [];
 
       masters = this.getMasters();
+
       if (masters && masters.length) {
-        Object.entries(masters).forEach(entry => {
-          const [, selector] = entry;
+        for (let i = 0; i < masters.length; i++) {
+          const selector = masters[i];
           const holderName = this.nameToHolder(selector);
           const master = this.getLogicHolder().find(`#${holderName}`);
 
@@ -187,7 +188,7 @@ jQuery.entwine('ss', ($) => {
           if (master.find('input[type=checkbox]').length > 1) {
             master.addClass('checkboxset');
           }
-        });
+        }
       }
 
       // If all the masters are readonly fields, the field has no way of displaying.
@@ -329,12 +330,12 @@ jQuery.entwine('ss', ($) => {
       this.getLogicHolder().find('.display-logic').each(function () {
         const masters = $(this).getMasters();
         if (masters && masters.length) {
-          Object.entries(masters).forEach(entry => {
-            const [, selector] = entry;
+          for (let i = 0; i < masters.length; i++) {
+            const selector = masters[i];
             if (self.nameToHolder(selector) === self.attr('id')) {
               listeners.push($(this)[0]);
             }
-          });
+          }
         }
       });
       this.setListeners(listeners);
